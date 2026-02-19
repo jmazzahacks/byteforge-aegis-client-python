@@ -52,6 +52,46 @@ site = admin.create_site(CreateSiteRequest(
 ))
 ```
 
+## Webhook Signature Verification
+
+When your application receives webhooks from Aegis, use `verify_webhook_signature` to confirm they are authentic:
+
+```python
+from flask import Flask, request, jsonify
+from byteforge_aegis_client import verify_webhook_signature
+
+WEBHOOK_SECRET = "your-site-webhook-secret"
+
+app = Flask(__name__)
+
+@app.post("/api/webhooks/aegis")
+def handle_webhook():
+    signature = request.headers.get("X-Aegis-Signature", "")
+    timestamp = request.headers.get("X-Aegis-Timestamp", "")
+    body = request.get_data(as_text=True)
+
+    if not verify_webhook_signature(WEBHOOK_SECRET, signature, timestamp, body):
+        return jsonify({"error": "Invalid signature"}), 401
+
+    payload = request.get_json()
+    if payload["event_type"] == "user.verified":
+        print(f"User verified: {payload['email']}")
+
+    return jsonify({"received": True}), 200
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `secret` | `str` | The webhook secret for this site |
+| `signature_header` | `str` | Value of the `X-Aegis-Signature` header |
+| `timestamp` | `str` | Value of the `X-Aegis-Timestamp` header |
+| `body` | `str` | Raw request body string |
+| `tolerance_seconds` | `int` | Max age in seconds (default 300, set to 0 to disable) |
+
+The function uses constant-time comparison to prevent timing attacks and checks timestamp freshness to prevent replay attacks.
+
 ## License
 
 [O'Saasy License](https://osaasy.dev/) - Copyright 2026, Really Bad Apps, LLC.
