@@ -1,0 +1,29 @@
+# Virtual environment
+bin/
+lib/
+include/
+pyvenv.cfg
+share/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# Testing
+.pytest_cache/
+coverage/
+htmlcov/
+.coverage
