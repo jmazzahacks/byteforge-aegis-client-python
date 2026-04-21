@@ -212,6 +212,19 @@ class AegisClient:
         data = self._http.request('POST', '/api/auth/verify-email', body)
         return VerificationResult.from_dict(data)
 
+    def me(self) -> User:
+        """
+        Return the user associated with the current bearer token.
+        GET /api/auth/me
+
+        Raises:
+            ValueError: if no auth token is set on the client.
+            AegisUnauthorized: if the token is missing, malformed, unknown, or expired.
+        """
+        self._require_auth_token()
+        data = self._http.request('GET', '/api/auth/me')
+        return User.from_dict(data)
+
     def change_password(self, old_password: str, new_password: str) -> User:
         """Change the current user's password. POST /api/auth/change-password"""
         self._require_auth_token()

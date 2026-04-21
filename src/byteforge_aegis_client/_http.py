@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Optional
 
 import requests
 
-from byteforge_aegis_client.exceptions import AegisApiError, AegisNetworkError
+from byteforge_aegis_client.exceptions import AegisApiError, AegisNetworkError, AegisUnauthorized
 
 
 class HttpSession:
@@ -106,10 +106,15 @@ class HttpSession:
         except (ValueError, requests.exceptions.JSONDecodeError):
             if 200 <= response.status_code < 300:
                 return {}
-            raise AegisApiError(response.status_code, response.text or "Unknown error")
+            message = response.text or "Unknown error"
+            if response.status_code == 401:
+                raise AegisUnauthorized(message)
+            raise AegisApiError(response.status_code, message)
 
         if 200 <= response.status_code < 300:
             return data
 
         error_msg = data.get('error', 'Unknown error') if isinstance(data, dict) else str(data)
+        if response.status_code == 401:
+            raise AegisUnauthorized(error_msg)
         raise AegisApiError(response.status_code, error_msg)

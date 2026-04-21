@@ -20,6 +20,19 @@ class AegisApiError(AegisError):
         super().__init__(f"HTTP {status_code}: {message}")
 
 
+class AegisUnauthorized(AegisApiError):
+    """
+    Raised when the API returns 401 (missing/invalid/expired credentials).
+
+    Subclass of AegisApiError, so existing `except AegisApiError` handlers
+    still catch it. Callers that want to distinguish "not authenticated" from
+    other API errors can catch this specifically.
+    """
+
+    def __init__(self, message: str = "Unauthorized") -> None:
+        super().__init__(401, message)
+
+
 class AegisNetworkError(AegisError):
     """
     Raised when a network/connection error occurs.
