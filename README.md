@@ -5,7 +5,7 @@ Python client for the [ByteForge Aegis](https://github.com/jmazzahacks/byteforge
 ## Installation
 
 ```bash
-pip install git+https://github.com/Really-Bad-Apps/byteforge-aegis-client-python.git
+pip install git+https://github.com/jmazzahacks/byteforge-aegis-client-python.git
 ```
 
 ## Quick Start
