@@ -1,6 +1,6 @@
 """Python client for ByteForge Aegis multi-tenant authentication."""
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 from byteforge_aegis_client.aegis_client import AegisClient
 from byteforge_aegis_client.config import AegisClientConfig

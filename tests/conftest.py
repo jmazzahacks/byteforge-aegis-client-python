@@ -39,6 +39,17 @@ def authed_client() -> AegisClient:
     return c
 
 
+@pytest.fixture
+def tenant_client() -> AegisClient:
+    """Client configured with both site_id and tenant_api_key."""
+    return AegisClient(AegisClientConfig(
+        api_url=API_URL,
+        site_id=1,
+        tenant_api_key="tenant_secret_abc123",
+        auto_refresh=False,
+    ))
+
+
 def make_user_dict(
     user_id: int = 10,
     site_id: int = 1,

@@ -17,6 +17,7 @@ class HttpSession:
         api_url: str,
         get_auth_token: Callable[[], Optional[str]],
         get_master_api_key: Callable[[], Optional[str]],
+        get_tenant_api_key: Callable[[], Optional[str]],
         should_refresh: Callable[[], bool],
         do_refresh: Callable[[], bool],
         auto_refresh: bool,
@@ -24,6 +25,7 @@ class HttpSession:
         self._api_url = api_url.rstrip('/')
         self._get_auth_token = get_auth_token
         self._get_master_api_key = get_master_api_key
+        self._get_tenant_api_key = get_tenant_api_key
         self._should_refresh = should_refresh
         self._do_refresh = do_refresh
         self._auto_refresh = auto_refresh
@@ -82,7 +84,7 @@ class HttpSession:
             raise AegisNetworkError(str(e))
 
     def _build_headers(self) -> Dict[str, str]:
-        """Build request headers with auth token and/or API key."""
+        """Build request headers with auth token, master API key, and/or tenant API key."""
         headers: Dict[str, str] = {
             'Content-Type': 'application/json',
         }
@@ -92,6 +94,9 @@ class HttpSession:
         api_key = self._get_master_api_key()
         if api_key:
             headers['X-API-Key'] = api_key
+        tenant_key = self._get_tenant_api_key()
+        if tenant_key:
+            headers['X-Tenant-Api-Key'] = tenant_key
         return headers
 
     def _parse_response(self, response: requests.Response) -> Dict[str, Any]:

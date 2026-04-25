@@ -59,6 +59,7 @@ class UpdateSiteRequest:
         allow_self_registration: Enable/disable self-registration
         webhook_url: New webhook URL (set to empty string to clear)
         regenerate_webhook_secret: Whether to regenerate the webhook secret
+        regenerate_tenant_api_key: Whether to regenerate the tenant API key
     """
     name: Optional[str] = None
     domain: Optional[str] = None
@@ -69,6 +70,7 @@ class UpdateSiteRequest:
     allow_self_registration: Optional[bool] = None
     webhook_url: Optional[str] = field(default=None)
     regenerate_webhook_secret: Optional[bool] = None
+    regenerate_tenant_api_key: Optional[bool] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary, only including explicitly set fields."""
@@ -91,4 +93,6 @@ class UpdateSiteRequest:
             result['webhook_url'] = self.webhook_url
         if self.regenerate_webhook_secret is not None:
             result['regenerate_webhook_secret'] = self.regenerate_webhook_secret
+        if self.regenerate_tenant_api_key is not None:
+            result['regenerate_tenant_api_key'] = self.regenerate_tenant_api_key
         return result

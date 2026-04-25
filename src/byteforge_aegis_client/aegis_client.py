@@ -38,6 +38,7 @@ class AegisClient:
             api_url=config.api_url,
             get_auth_token=self.get_auth_token,
             get_master_api_key=self._get_master_api_key,
+            get_tenant_api_key=self._get_tenant_api_key,
             should_refresh=self._should_refresh_token,
             do_refresh=self._do_refresh,
             auto_refresh=config.auto_refresh,
@@ -80,6 +81,10 @@ class AegisClient:
     def _get_master_api_key(self) -> Optional[str]:
         """Get the master API key from config."""
         return self._config.master_api_key
+
+    def _get_tenant_api_key(self) -> Optional[str]:
+        """Get the tenant API key from config."""
+        return self._config.tenant_api_key
 
     def _should_refresh_token(self) -> bool:
         """Check if the auth token should be proactively refreshed."""
@@ -196,17 +201,30 @@ class AegisClient:
         return MessageResponse.from_dict(data)
 
     def check_verification_token(self, token: str) -> VerificationTokenStatus:
-        """Check a verification token. POST /api/auth/check-verification-token"""
+        """Check a verification token. POST /api/auth/check-verification-token
+
+        site_id is auto-included from config when set; otherwise the caller
+        (typically a tenant proxy route) is expected to add it.
+        """
+        body: Dict[str, Any] = {'token': token}
+        if self._config.site_id:
+            body['site_id'] = self._config.site_id
         data = self._http.request(
-            'POST', '/api/auth/check-verification-token', {'token': token}
+            'POST', '/api/auth/check-verification-token', body
         )
         return VerificationTokenStatus.from_dict(data)
 
     def verify_email(
         self, token: str, password: Optional[str] = None
     ) -> VerificationResult:
-        """Verify an email address. POST /api/auth/verify-email"""
+        """Verify an email address. POST /api/auth/verify-email
+
+        site_id is auto-included from config when set; otherwise the caller
+        (typically a tenant proxy route) is expected to add it.
+        """
         body: Dict[str, Any] = {'token': token}
+        if self._config.site_id:
+            body['site_id'] = self._config.site_id
         if password:
             body['password'] = password
         data = self._http.request('POST', '/api/auth/verify-email', body)
@@ -242,8 +260,14 @@ class AegisClient:
         return MessageResponse.from_dict(data)
 
     def reset_password(self, token: str, new_password: str) -> User:
-        """Reset password with a token. POST /api/auth/reset-password"""
-        body = {'token': token, 'new_password': new_password}
+        """Reset password with a token. POST /api/auth/reset-password
+
+        site_id is auto-included from config when set; otherwise the caller
+        (typically a tenant proxy route) is expected to add it.
+        """
+        body: Dict[str, Any] = {'token': token, 'new_password': new_password}
+        if self._config.site_id:
+            body['site_id'] = self._config.site_id
         data = self._http.request('POST', '/api/auth/reset-password', body)
         return User.from_dict(data)
 
