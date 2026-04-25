@@ -25,6 +25,8 @@ class CreateSiteRequest:
     verification_redirect_url: Optional[str] = None
     allow_self_registration: Optional[bool] = None
     webhook_url: Optional[str] = None
+    mailgun_domain: Optional[str] = None
+    mailgun_api_key: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary, excluding None values."""
@@ -41,6 +43,10 @@ class CreateSiteRequest:
             result['allow_self_registration'] = self.allow_self_registration
         if self.webhook_url is not None:
             result['webhook_url'] = self.webhook_url
+        if self.mailgun_domain is not None:
+            result['mailgun_domain'] = self.mailgun_domain
+        if self.mailgun_api_key is not None:
+            result['mailgun_api_key'] = self.mailgun_api_key
         return result
 
 
@@ -71,6 +77,8 @@ class UpdateSiteRequest:
     webhook_url: Optional[str] = field(default=None)
     regenerate_webhook_secret: Optional[bool] = None
     regenerate_tenant_api_key: Optional[bool] = None
+    mailgun_domain: Optional[str] = None
+    mailgun_api_key: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary, only including explicitly set fields."""
@@ -95,4 +103,8 @@ class UpdateSiteRequest:
             result['regenerate_webhook_secret'] = self.regenerate_webhook_secret
         if self.regenerate_tenant_api_key is not None:
             result['regenerate_tenant_api_key'] = self.regenerate_tenant_api_key
+        if self.mailgun_domain is not None:
+            result['mailgun_domain'] = self.mailgun_domain
+        if self.mailgun_api_key is not None:
+            result['mailgun_api_key'] = self.mailgun_api_key
         return result
