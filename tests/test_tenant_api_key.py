@@ -8,7 +8,7 @@ import responses
 
 from byteforge_aegis_client import AegisClient
 
-from conftest import API_URL, make_user_dict
+from conftest import API_URL
 
 
 @responses.activate
@@ -17,7 +17,7 @@ def test_register_sends_tenant_api_key_header(tenant_client: AegisClient) -> Non
     responses.add(
         responses.POST,
         f"{API_URL}/api/auth/register",
-        json=make_user_dict(),
+        json={"message": "Registration initiated. Please check your email to continue."},
         status=201,
     )
 
@@ -86,7 +86,7 @@ def test_client_without_tenant_key_omits_header(client: AegisClient) -> None:
     responses.add(
         responses.POST,
         f"{API_URL}/api/auth/register",
-        json=make_user_dict(),
+        json={"message": "Registration initiated. Please check your email to continue."},
         status=201,
     )
 

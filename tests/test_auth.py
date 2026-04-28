@@ -3,9 +3,9 @@ import pytest
 import responses
 
 from byteforge_aegis_client import AegisClient, AegisClientConfig, AegisApiError
-from byteforge_aegis_models import LoginResult, MessageResponse, User
+from byteforge_aegis_models import LoginResult, MessageResponse
 
-from conftest import API_URL, make_login_response_dict, make_user_dict
+from conftest import API_URL, make_login_response_dict
 
 
 class TestLogin:
@@ -89,19 +89,21 @@ class TestRegister:
     def test_register_success(self, client: AegisClient) -> None:
         responses.add(
             responses.POST, f"{API_URL}/api/auth/register",
-            json=make_user_dict(), status=201,
+            json={"message": "Registration initiated. Please check your email to continue."},
+            status=201,
         )
 
         result = client.register("user@test.com", "password123")
 
-        assert isinstance(result, User)
-        assert result.email == "user@test.com"
+        assert isinstance(result, MessageResponse)
+        assert "Registration initiated" in result.message
 
     @responses.activate
     def test_register_without_password(self, client: AegisClient) -> None:
         responses.add(
             responses.POST, f"{API_URL}/api/auth/register",
-            json=make_user_dict(), status=201,
+            json={"message": "Registration initiated. Please check your email to continue."},
+            status=201,
         )
 
         client.register("user@test.com")

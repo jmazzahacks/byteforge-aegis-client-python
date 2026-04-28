@@ -171,14 +171,20 @@ class AegisClient:
 
     def register(
         self, email: str, password: Optional[str] = None, site_id: Optional[int] = None
-    ) -> User:
-        """Register a new user. POST /api/auth/register"""
+    ) -> MessageResponse:
+        """Register a new user. POST /api/auth/register
+
+        Returns a MessageResponse, not a User: Aegis intentionally returns the
+        same generic "Registration initiated" message regardless of whether
+        the email already exists, to prevent enumeration. The User record is
+        materialized later when verify_email is consumed.
+        """
         resolved_site_id = self._require_site_id(site_id)
         body: Dict[str, Any] = {'site_id': resolved_site_id, 'email': email}
         if password:
             body['password'] = password
         data = self._http.request('POST', '/api/auth/register', body)
-        return User.from_dict(data)
+        return MessageResponse.from_dict(data)
 
     def login(
         self, email: str, password: str, site_id: Optional[int] = None
