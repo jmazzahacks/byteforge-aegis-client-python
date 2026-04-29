@@ -75,7 +75,13 @@ def make_login_response_dict(
     user_id: int = 10,
     expires_at: int = 1700099999,
 ) -> dict:
-    """Helper to build a login response dict."""
+    """Helper to build a login response dict.
+
+    Mirrors LoginResultResponseSchema on the Aegis backend: the nested
+    auth_token and refresh_token expose only the fields documented in
+    AuthTokenResponseSchema / RefreshTokenResponseSchema. family_id and
+    created_at are intentionally omitted from the wire format.
+    """
     return {
         "auth_token": {
             "token": auth_token,
@@ -86,9 +92,7 @@ def make_login_response_dict(
             "token": refresh_token,
             "site_id": 1,
             "user_id": user_id,
-            "family_id": "fam_123",
             "expires_at": expires_at + 86400,
-            "created_at": 1700000000,
         },
     }
 
