@@ -341,6 +341,21 @@ class AegisClient:
         data = self._http.request('GET', f'/api/sites/{site_id}/users')
         return [User.from_dict(u) for u in data]
 
+    def get_user(self, user_id: int, site_id: Optional[int] = None) -> User:
+        """Get a single user by ID. GET /api/sites/{site_id}/users/{user_id}.
+
+        Tenant-key-gated server-to-server lookup. Use this from a tenant
+        backend (with tenant_api_key configured) to resolve an Aegis user_id
+        to a user record — including role — for authorization checks.
+
+        Falls back to config.site_id when site_id is omitted.
+        """
+        resolved_site_id = self._require_site_id(site_id)
+        data = self._http.request(
+            'GET', f'/api/sites/{resolved_site_id}/users/{user_id}'
+        )
+        return User.from_dict(data)
+
     def update_site(self, site_id: int, updates: UpdateSiteRequest) -> Site:
         """Update a site. PUT /api/sites/{site_id}"""
         self._require_master_api_key()
