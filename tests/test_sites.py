@@ -87,6 +87,33 @@ class TestAdminSiteOperations:
         site = admin_client.update_site(1, UpdateSiteRequest(name="Updated Site"))
         assert site.name == "Updated Site"
 
+    @responses.activate
+    def test_delete_site(self, admin_client: AegisClient) -> None:
+        responses.add(
+            responses.DELETE, f"{API_URL}/api/sites/1",
+            json={"message": "Site 1 deleted successfully"}, status=200,
+        )
+
+        result = admin_client.delete_site(1)
+
+        assert result is None
+        assert responses.calls[0].request.headers["X-API-Key"] == "master_key_123"
+
+    @responses.activate
+    def test_delete_site_not_found(self, admin_client: AegisClient) -> None:
+        responses.add(
+            responses.DELETE, f"{API_URL}/api/sites/999",
+            json={"error": "Site not found"}, status=404,
+        )
+
+        with pytest.raises(AegisApiError) as exc_info:
+            admin_client.delete_site(999)
+        assert exc_info.value.status_code == 404
+
+    def test_delete_site_no_api_key(self, client: AegisClient) -> None:
+        with pytest.raises(ValueError, match="Master API key"):
+            client.delete_site(1)
+
     def test_list_sites_no_api_key(self, client: AegisClient) -> None:
         with pytest.raises(ValueError, match="Master API key"):
             client.list_sites()

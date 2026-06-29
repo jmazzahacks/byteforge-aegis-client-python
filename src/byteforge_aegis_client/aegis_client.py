@@ -363,6 +363,16 @@ class AegisClient:
         data = self._http.request('PUT', f'/api/sites/{site_id}', updates.to_dict())
         return Site.from_dict(data)
 
+    def delete_site(self, site_id: Identifier) -> None:
+        """Delete a site and ALL of its data. DELETE /api/sites/{site_id}.
+
+        Irreversible: every user, token, and record belonging to the site is
+        permanently removed. Raises AegisApiError on failure (e.g. 404 if the
+        site does not exist).
+        """
+        self._require_master_api_key()
+        self._http.request('DELETE', f'/api/sites/{site_id}')
+
     # ========================================================================
     # Aegis Admin operations (used by admin frontend)
     # ========================================================================
