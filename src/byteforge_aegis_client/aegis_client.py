@@ -373,6 +373,16 @@ class AegisClient:
         self._require_master_api_key()
         self._http.request('DELETE', f'/api/sites/{site_id}')
 
+    def delete_user(self, user_id: Identifier) -> None:
+        """Delete a user and all of their data. DELETE /api/admin/users/{user_id}.
+
+        Irreversible: the user and every token/record belonging to them is
+        permanently removed. Raises AegisApiError on failure (e.g. 404 if the
+        user does not exist).
+        """
+        self._require_master_api_key()
+        self._http.request('DELETE', f'/api/admin/users/{user_id}')
+
     # ========================================================================
     # Aegis Admin operations (used by admin frontend)
     # ========================================================================

@@ -2,7 +2,7 @@
 import pytest
 import responses
 
-from byteforge_aegis_client import AegisClient
+from byteforge_aegis_client import AegisClient, AegisApiError
 from byteforge_aegis_models import HealthStatus, Site, User
 
 from conftest import API_URL, make_site_dict, make_user_dict
@@ -91,3 +91,32 @@ class TestAegisAdminListUsersBySite:
 
         assert len(users) == 1
         assert isinstance(users[0], User)
+
+
+class TestDeleteUser:
+    @responses.activate
+    def test_success(self, admin_client: AegisClient) -> None:
+        responses.add(
+            responses.DELETE, f"{API_URL}/api/admin/users/1",
+            json={"message": "User 1 deleted successfully"}, status=200,
+        )
+
+        result = admin_client.delete_user(1)
+
+        assert result is None
+        assert responses.calls[0].request.headers["X-API-Key"] == "master_key_123"
+
+    @responses.activate
+    def test_not_found(self, admin_client: AegisClient) -> None:
+        responses.add(
+            responses.DELETE, f"{API_URL}/api/admin/users/999",
+            json={"error": "User not found"}, status=404,
+        )
+
+        with pytest.raises(AegisApiError) as exc_info:
+            admin_client.delete_user(999)
+        assert exc_info.value.status_code == 404
+
+    def test_no_api_key(self, client: AegisClient) -> None:
+        with pytest.raises(ValueError, match="Master API key"):
+            client.delete_user(1)
