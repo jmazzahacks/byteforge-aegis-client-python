@@ -8,7 +8,7 @@ import responses
 
 from byteforge_aegis_client import AegisClient
 
-from conftest import API_URL
+from conftest import API_URL, SITE_UUID, USER_UUID
 
 
 @responses.activate
@@ -33,7 +33,7 @@ def test_login_sends_tenant_api_key_header(tenant_client: AegisClient) -> None:
         responses.POST,
         f"{API_URL}/api/auth/login",
         json={
-            "auth_token": {"token": "t", "user_id": 1, "expires_at": 9999999999},
+            "auth_token": {"token": "t", "user_uuid": USER_UUID, "expires_at": 9999999999},
             "refresh_token": None,
         },
         status=200,
@@ -75,7 +75,7 @@ def test_check_verification_token_includes_site_id_in_body(tenant_client: AegisC
 
     request = responses.calls[0].request
     body = json.loads(request.body)
-    assert body["site_id"] == 1
+    assert body["site_id"] == SITE_UUID
     assert body["token"] == "vtoken"
     assert request.headers.get("X-Tenant-Api-Key") == "tenant_secret_abc123"
 

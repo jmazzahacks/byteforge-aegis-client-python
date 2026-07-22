@@ -5,7 +5,10 @@ import responses
 from byteforge_aegis_client import AegisClient, AegisApiError, CreateSiteRequest, UpdateSiteRequest
 from byteforge_aegis_models import Site
 
-from conftest import API_URL, make_site_dict
+from conftest import API_URL, SITE_UUID, make_site_dict
+
+OTHER_SITE_UUID = "0191e1a0-0000-7000-8000-000000000002"
+UNKNOWN_SITE_UUID = "0191e1a0-0000-7000-8000-0000000fffff"
 
 
 class TestGetSiteByDomain:
@@ -40,7 +43,7 @@ class TestAdminSiteOperations:
     def test_list_sites(self, admin_client: AegisClient) -> None:
         responses.add(
             responses.GET, f"{API_URL}/api/sites",
-            json=[make_site_dict(1), make_site_dict(2)], status=200,
+            json=[make_site_dict(SITE_UUID), make_site_dict(OTHER_SITE_UUID)], status=200,
         )
 
         sites = admin_client.list_sites()
@@ -52,12 +55,12 @@ class TestAdminSiteOperations:
     @responses.activate
     def test_get_site(self, admin_client: AegisClient) -> None:
         responses.add(
-            responses.GET, f"{API_URL}/api/sites/1",
+            responses.GET, f"{API_URL}/api/sites/{SITE_UUID}",
             json=make_site_dict(), status=200,
         )
 
-        site = admin_client.get_site(1)
-        assert site.id == 1
+        site = admin_client.get_site(SITE_UUID)
+        assert site.uuid == SITE_UUID
 
     @responses.activate
     def test_create_site(self, admin_client: AegisClient) -> None:
@@ -80,21 +83,21 @@ class TestAdminSiteOperations:
         updated = make_site_dict()
         updated["name"] = "Updated Site"
         responses.add(
-            responses.PUT, f"{API_URL}/api/sites/1",
+            responses.PUT, f"{API_URL}/api/sites/{SITE_UUID}",
             json=updated, status=200,
         )
 
-        site = admin_client.update_site(1, UpdateSiteRequest(name="Updated Site"))
+        site = admin_client.update_site(SITE_UUID, UpdateSiteRequest(name="Updated Site"))
         assert site.name == "Updated Site"
 
     @responses.activate
     def test_delete_site(self, admin_client: AegisClient) -> None:
         responses.add(
-            responses.DELETE, f"{API_URL}/api/sites/1",
-            json={"message": "Site 1 deleted successfully"}, status=200,
+            responses.DELETE, f"{API_URL}/api/sites/{SITE_UUID}",
+            json={"message": "Site deleted successfully"}, status=200,
         )
 
-        result = admin_client.delete_site(1)
+        result = admin_client.delete_site(SITE_UUID)
 
         assert result is None
         assert responses.calls[0].request.headers["X-API-Key"] == "master_key_123"
@@ -102,17 +105,17 @@ class TestAdminSiteOperations:
     @responses.activate
     def test_delete_site_not_found(self, admin_client: AegisClient) -> None:
         responses.add(
-            responses.DELETE, f"{API_URL}/api/sites/999",
+            responses.DELETE, f"{API_URL}/api/sites/{UNKNOWN_SITE_UUID}",
             json={"error": "Site not found"}, status=404,
         )
 
         with pytest.raises(AegisApiError) as exc_info:
-            admin_client.delete_site(999)
+            admin_client.delete_site(UNKNOWN_SITE_UUID)
         assert exc_info.value.status_code == 404
 
     def test_delete_site_no_api_key(self, client: AegisClient) -> None:
         with pytest.raises(ValueError, match="Master API key"):
-            client.delete_site(1)
+            client.delete_site(SITE_UUID)
 
     def test_list_sites_no_api_key(self, client: AegisClient) -> None:
         with pytest.raises(ValueError, match="Master API key"):
@@ -122,10 +125,16 @@ class TestAdminSiteOperations:
     def test_list_users_by_site(self, admin_client: AegisClient) -> None:
         from conftest import make_user_dict
         responses.add(
-            responses.GET, f"{API_URL}/api/sites/1/users",
-            json=[make_user_dict(), make_user_dict(user_id=11, email="other@test.com")],
+            responses.GET, f"{API_URL}/api/sites/{SITE_UUID}/users",
+            json=[
+                make_user_dict(),
+                make_user_dict(
+                    user_uuid="0191e1a0-0000-7000-8000-0000000000bb",
+                    email="other@test.com",
+                ),
+            ],
             status=200,
         )
 
-        users = admin_client.list_users_by_site(1)
+        users = admin_client.list_users_by_site(SITE_UUID)
         assert len(users) == 2

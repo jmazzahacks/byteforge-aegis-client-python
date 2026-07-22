@@ -15,13 +15,13 @@ from byteforge_aegis_client import AegisClient, AegisClientConfig, AegisApiError
 
 client = AegisClient(AegisClientConfig(
     api_url="https://auth.example.com",
-    site_id=1,
+    site_id="0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d",  # your site's UUID
 ))
 
 # Login - raises AegisApiError on failure
 try:
     result = client.login("user@example.com", "password123")
-    print(f"Logged in as user {result.auth_token.user_id}")
+    print(f"Logged in as user {result.auth_token.user_uuid}")
 except AegisApiError as e:
     print(f"Login failed: {e.message}")
 

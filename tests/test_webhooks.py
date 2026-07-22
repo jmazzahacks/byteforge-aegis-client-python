@@ -6,7 +6,7 @@ import time
 from byteforge_aegis_client import verify_webhook_signature
 
 SECRET = "test_webhook_secret_abc123"
-BODY = '{"event_type":"user.verified","site_id":1,"user_id":10,"email":"u@test.com","aegis_role":"user","timestamp":1700000000}'
+BODY = '{"event_type":"user.verified","site_uuid":"0191e1a0-0000-7000-8000-000000000001","user_uuid":"0191e1a0-0000-7000-8000-0000000000aa","email":"u@test.com","aegis_role":"user","timestamp":1700000000}'
 
 
 def _make_signature(secret: str, timestamp: str, body: str) -> str:

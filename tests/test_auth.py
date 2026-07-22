@@ -48,9 +48,10 @@ class TestLogin:
             json=make_login_response_dict(), status=200,
         )
 
-        result = client.login("user@test.com", "password", site_id=5)
+        other_site = "0191e1a0-0000-7000-8000-000000000005"
+        result = client.login("user@test.com", "password", site_id=other_site)
         body = responses.calls[0].request.body.decode()
-        assert '"site_id": 5' in body
+        assert f'"site_id": "{other_site}"' in body
 
 
 class TestLogout:

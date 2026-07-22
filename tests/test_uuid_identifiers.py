@@ -1,18 +1,21 @@
-"""Tests for UUID identifier support (int -> UUID migration, dual phase).
+"""Tests for UUID identifier handling (post-contract: UUID is the only form).
 
-The client must accept a site/user identifier as either an integer id or a
-UUID string (in config or per-call) and pass it through to the API unchanged,
-and must surface the uuid/site_uuid fields the API now returns.
+The client passes site/user UUIDs through to the API unchanged (in config or
+per-call) and surfaces the uuid/site_uuid fields the API returns.
 """
 import responses
 
 from byteforge_aegis_client import AegisClient, AegisClientConfig
-from byteforge_aegis_models import Site, User
+from byteforge_aegis_models import User
 
-from conftest import API_URL, make_login_response_dict, make_site_dict, make_user_dict
-
-SITE_UUID = "0191e1a0-0000-7000-8000-000000000001"
-USER_UUID = "0191e1a0-0000-7000-8000-0000000000aa"
+from conftest import (
+    API_URL,
+    SITE_UUID,
+    USER_UUID,
+    make_login_response_dict,
+    make_site_dict,
+    make_user_dict,
+)
 
 
 class TestUuidRequestPassthrough:
@@ -42,10 +45,8 @@ class TestUuidRequestPassthrough:
 
     @responses.activate
     def test_get_site_by_uuid_builds_uuid_url(self, admin_client: AegisClient) -> None:
-        site_dict = make_site_dict()
-        site_dict["uuid"] = SITE_UUID
         responses.add(responses.GET, f"{API_URL}/api/sites/{SITE_UUID}",
-                      json=site_dict, status=200)
+                      json=make_site_dict(), status=200)
 
         site = admin_client.get_site(SITE_UUID)
 
@@ -54,13 +55,10 @@ class TestUuidRequestPassthrough:
 
     @responses.activate
     def test_get_user_by_uuid_builds_uuid_url(self, tenant_client: AegisClient) -> None:
-        user_dict = make_user_dict()
-        user_dict["uuid"] = USER_UUID
-        user_dict["site_uuid"] = SITE_UUID
         responses.add(
             responses.GET,
             f"{API_URL}/api/sites/{SITE_UUID}/users/{USER_UUID}",
-            json=user_dict, status=200,
+            json=make_user_dict(), status=200,
         )
 
         user = tenant_client.get_user(USER_UUID, site_id=SITE_UUID)
@@ -75,10 +73,8 @@ class TestUuidRequestPassthrough:
 class TestUuidResponseParsing:
     @responses.activate
     def test_me_exposes_uuid_fields(self, authed_client: AegisClient) -> None:
-        user_dict = make_user_dict()
-        user_dict["uuid"] = USER_UUID
-        user_dict["site_uuid"] = SITE_UUID
-        responses.add(responses.GET, f"{API_URL}/api/auth/me", json=user_dict, status=200)
+        responses.add(responses.GET, f"{API_URL}/api/auth/me",
+                      json=make_user_dict(), status=200)
 
         user = authed_client.me()
 
@@ -87,12 +83,16 @@ class TestUuidResponseParsing:
         assert user.site_uuid == SITE_UUID
 
     @responses.activate
-    def test_int_site_id_still_passed_through(self, client: AegisClient) -> None:
-        """Integer addressing must keep working unchanged."""
+    def test_login_result_tokens_carry_uuids(self) -> None:
+        client = AegisClient(AegisClientConfig(
+            api_url=API_URL, site_id=SITE_UUID, auto_refresh=False,
+        ))
         responses.add(responses.POST, f"{API_URL}/api/auth/login",
                       json=make_login_response_dict(), status=200)
 
-        client.login("user@test.com", "pw", site_id=5)
+        result = client.login("user@test.com", "pw")
 
-        body = responses.calls[0].request.body.decode()
-        assert '"site_id": 5' in body
+        assert result.auth_token.user_uuid == USER_UUID
+        assert result.refresh_token is not None
+        assert result.refresh_token.site_uuid == SITE_UUID
+        assert result.refresh_token.user_uuid == USER_UUID

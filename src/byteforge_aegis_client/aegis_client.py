@@ -15,7 +15,7 @@ from byteforge_aegis_models import (
 )
 
 from byteforge_aegis_client._http import HttpSession
-from byteforge_aegis_client.config import AegisClientConfig, Identifier
+from byteforge_aegis_client.config import AegisClientConfig
 from byteforge_aegis_client.request_models import CreateSiteRequest, UpdateSiteRequest
 
 
@@ -109,9 +109,8 @@ class AegisClient:
         except Exception:
             return False
 
-    def _require_site_id(self, site_id: Optional[Identifier] = None) -> Identifier:
-        """Get the site identifier (integer id or UUID) from argument or config,
-        raising if neither available."""
+    def _require_site_id(self, site_id: Optional[str] = None) -> str:
+        """Get the site UUID from argument or config, raising if neither available."""
         resolved = site_id or self._config.site_id
         if not resolved:
             raise ValueError("site_id is required but not provided and not set in config")
@@ -171,7 +170,7 @@ class AegisClient:
     # ========================================================================
 
     def register(
-        self, email: str, password: Optional[str] = None, site_id: Optional[Identifier] = None
+        self, email: str, password: Optional[str] = None, site_id: Optional[str] = None
     ) -> MessageResponse:
         """Register a new user. POST /api/auth/register
 
@@ -188,7 +187,7 @@ class AegisClient:
         return MessageResponse.from_dict(data)
 
     def login(
-        self, email: str, password: str, site_id: Optional[Identifier] = None
+        self, email: str, password: str, site_id: Optional[str] = None
     ) -> LoginResult:
         """Login a user. POST /api/auth/login. Auto-sets tokens on success."""
         resolved_site_id = self._require_site_id(site_id)
@@ -258,7 +257,7 @@ class AegisClient:
         return User.from_dict(data)
 
     def request_password_reset(
-        self, email: str, site_id: Optional[Identifier] = None
+        self, email: str, site_id: Optional[str] = None
     ) -> MessageResponse:
         """Request a password reset email. POST /api/auth/request-password-reset"""
         resolved_site_id = self._require_site_id(site_id)
@@ -308,7 +307,7 @@ class AegisClient:
     # ========================================================================
 
     def register_admin(
-        self, email: str, site_id: Identifier, role: Optional[str] = None
+        self, email: str, site_id: str, role: Optional[str] = None
     ) -> User:
         """Register an admin user. POST /api/admin/register"""
         self._require_master_api_key()
@@ -324,8 +323,8 @@ class AegisClient:
         data = self._http.request('POST', '/api/sites', site_data.to_dict())
         return Site.from_dict(data)
 
-    def get_site(self, site_id: Identifier) -> Site:
-        """Get a site by identifier (integer id or UUID). GET /api/sites/{site_id}"""
+    def get_site(self, site_id: str) -> Site:
+        """Get a site by UUID. GET /api/sites/{site_id}"""
         self._require_master_api_key()
         data = self._http.request('GET', f'/api/sites/{site_id}')
         return Site.from_dict(data)
@@ -336,13 +335,13 @@ class AegisClient:
         data = self._http.request('GET', '/api/sites')
         return [Site.from_dict(s) for s in data]
 
-    def list_users_by_site(self, site_id: Identifier) -> List[User]:
+    def list_users_by_site(self, site_id: str) -> List[User]:
         """List users for a site. GET /api/sites/{site_id}/users"""
         self._require_master_api_key()
         data = self._http.request('GET', f'/api/sites/{site_id}/users')
         return [User.from_dict(u) for u in data]
 
-    def get_user(self, user_id: Identifier, site_id: Optional[Identifier] = None) -> User:
+    def get_user(self, user_id: str, site_id: Optional[str] = None) -> User:
         """Get a single user by identifier. GET /api/sites/{site_id}/users/{user_id}.
 
         Tenant-key-gated server-to-server lookup. Use this from a tenant
@@ -357,13 +356,13 @@ class AegisClient:
         )
         return User.from_dict(data)
 
-    def update_site(self, site_id: Identifier, updates: UpdateSiteRequest) -> Site:
+    def update_site(self, site_id: str, updates: UpdateSiteRequest) -> Site:
         """Update a site. PUT /api/sites/{site_id}"""
         self._require_master_api_key()
         data = self._http.request('PUT', f'/api/sites/{site_id}', updates.to_dict())
         return Site.from_dict(data)
 
-    def delete_site(self, site_id: Identifier) -> None:
+    def delete_site(self, site_id: str) -> None:
         """Delete a site and ALL of its data. DELETE /api/sites/{site_id}.
 
         Irreversible: every user, token, and record belonging to the site is
@@ -373,7 +372,7 @@ class AegisClient:
         self._require_master_api_key()
         self._http.request('DELETE', f'/api/sites/{site_id}')
 
-    def delete_user(self, user_id: Identifier) -> None:
+    def delete_user(self, user_id: str) -> None:
         """Delete a user and all of their data. DELETE /api/admin/users/{user_id}.
 
         Irreversible: the user and every token/record belonging to them is
@@ -398,7 +397,7 @@ class AegisClient:
         return [Site.from_dict(s) for s in data]
 
     def aegis_admin_list_users_by_site(
-        self, site_id: Identifier, admin_token: str
+        self, site_id: str, admin_token: str
     ) -> List[User]:
         """List users for a site using an admin bearer token."""
         old_token = self._auth_token

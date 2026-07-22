@@ -6,13 +6,16 @@ from byteforge_aegis_client import AegisClient, AegisClientConfig
 
 API_URL = "https://auth.test.example.com"
 
+SITE_UUID = "0191e1a0-0000-7000-8000-000000000001"
+USER_UUID = "0191e1a0-0000-7000-8000-0000000000aa"
+
 
 @pytest.fixture
 def client() -> AegisClient:
     """Client configured with site_id for user operations."""
     return AegisClient(AegisClientConfig(
         api_url=API_URL,
-        site_id=1,
+        site_id=SITE_UUID,
         auto_refresh=False,
     ))
 
@@ -32,7 +35,7 @@ def authed_client() -> AegisClient:
     """Client with an auth token already set."""
     c = AegisClient(AegisClientConfig(
         api_url=API_URL,
-        site_id=1,
+        site_id=SITE_UUID,
         auto_refresh=False,
     ))
     c.set_auth_token("test_auth_token")
@@ -44,23 +47,23 @@ def tenant_client() -> AegisClient:
     """Client configured with both site_id and tenant_api_key."""
     return AegisClient(AegisClientConfig(
         api_url=API_URL,
-        site_id=1,
+        site_id=SITE_UUID,
         tenant_api_key="tenant_secret_abc123",
         auto_refresh=False,
     ))
 
 
 def make_user_dict(
-    user_id: int = 10,
-    site_id: int = 1,
+    user_uuid: str = USER_UUID,
+    site_uuid: str = SITE_UUID,
     email: str = "user@test.com",
     is_verified: bool = True,
     role: str = "user",
 ) -> dict:
     """Helper to build a user response dict."""
     return {
-        "id": user_id,
-        "site_id": site_id,
+        "uuid": user_uuid,
+        "site_uuid": site_uuid,
         "email": email,
         "is_verified": is_verified,
         "role": role,
@@ -72,7 +75,7 @@ def make_user_dict(
 def make_login_response_dict(
     auth_token: str = "tok_abc",
     refresh_token: str = "ref_xyz",
-    user_id: int = 10,
+    user_uuid: str = USER_UUID,
     expires_at: int = 1700099999,
 ) -> dict:
     """Helper to build a login response dict.
@@ -85,22 +88,22 @@ def make_login_response_dict(
     return {
         "auth_token": {
             "token": auth_token,
-            "user_id": user_id,
+            "user_uuid": user_uuid,
             "expires_at": expires_at,
         },
         "refresh_token": {
             "token": refresh_token,
-            "site_id": 1,
-            "user_id": user_id,
+            "site_uuid": SITE_UUID,
+            "user_uuid": user_uuid,
             "expires_at": expires_at + 86400,
         },
     }
 
 
-def make_site_dict(site_id: int = 1) -> dict:
+def make_site_dict(site_uuid: str = SITE_UUID) -> dict:
     """Helper to build a site response dict."""
     return {
-        "id": site_id,
+        "uuid": site_uuid,
         "name": "Test Site",
         "domain": "test.example.com",
         "frontend_url": "https://test.example.com",

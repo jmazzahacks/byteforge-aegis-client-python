@@ -9,7 +9,7 @@ from byteforge_aegis_client import (
 )
 from byteforge_aegis_models import User
 
-from conftest import API_URL, make_user_dict
+from conftest import API_URL, USER_UUID, make_user_dict
 
 
 class TestMe:
@@ -23,7 +23,7 @@ class TestMe:
         user = authed_client.me()
 
         assert isinstance(user, User)
-        assert user.id == 10
+        assert user.uuid == USER_UUID
         assert user.email == "user@test.com"
         auth_header = responses.calls[0].request.headers["Authorization"]
         assert auth_header == "Bearer test_auth_token"

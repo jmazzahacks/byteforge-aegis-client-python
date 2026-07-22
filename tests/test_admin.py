@@ -5,7 +5,10 @@ import responses
 from byteforge_aegis_client import AegisClient, AegisApiError
 from byteforge_aegis_models import HealthStatus, Site, User
 
-from conftest import API_URL, make_site_dict, make_user_dict
+from conftest import API_URL, SITE_UUID, USER_UUID, make_site_dict, make_user_dict
+
+OTHER_USER_UUID = "0191e1a0-0000-7000-8000-0000000000bb"
+UNKNOWN_USER_UUID = "0191e1a0-0000-7000-8000-0000000fffff"
 
 
 class TestHealthCheck:
@@ -26,7 +29,7 @@ class TestAdminListUsers:
     def test_success(self, authed_client: AegisClient) -> None:
         responses.add(
             responses.GET, f"{API_URL}/api/admin/users",
-            json=[make_user_dict(), make_user_dict(user_id=11)],
+            json=[make_user_dict(), make_user_dict(user_uuid=OTHER_USER_UUID)],
             status=200,
         )
 
@@ -47,7 +50,7 @@ class TestRegisterAdmin:
             json=make_user_dict(role="admin"), status=201,
         )
 
-        user = admin_client.register_admin("admin@test.com", site_id=1, role="admin")
+        user = admin_client.register_admin("admin@test.com", site_id=SITE_UUID, role="admin")
         assert isinstance(user, User)
         assert user.role.value == "admin"
 
@@ -83,11 +86,11 @@ class TestAegisAdminListUsersBySite:
     @responses.activate
     def test_success(self, client: AegisClient) -> None:
         responses.add(
-            responses.GET, f"{API_URL}/api/sites/1/users",
+            responses.GET, f"{API_URL}/api/sites/{SITE_UUID}/users",
             json=[make_user_dict()], status=200,
         )
 
-        users = client.aegis_admin_list_users_by_site(1, "admin_token")
+        users = client.aegis_admin_list_users_by_site(SITE_UUID, "admin_token")
 
         assert len(users) == 1
         assert isinstance(users[0], User)
@@ -97,11 +100,11 @@ class TestDeleteUser:
     @responses.activate
     def test_success(self, admin_client: AegisClient) -> None:
         responses.add(
-            responses.DELETE, f"{API_URL}/api/admin/users/1",
-            json={"message": "User 1 deleted successfully"}, status=200,
+            responses.DELETE, f"{API_URL}/api/admin/users/{USER_UUID}",
+            json={"message": "User deleted successfully"}, status=200,
         )
 
-        result = admin_client.delete_user(1)
+        result = admin_client.delete_user(USER_UUID)
 
         assert result is None
         assert responses.calls[0].request.headers["X-API-Key"] == "master_key_123"
@@ -109,14 +112,14 @@ class TestDeleteUser:
     @responses.activate
     def test_not_found(self, admin_client: AegisClient) -> None:
         responses.add(
-            responses.DELETE, f"{API_URL}/api/admin/users/999",
+            responses.DELETE, f"{API_URL}/api/admin/users/{UNKNOWN_USER_UUID}",
             json={"error": "User not found"}, status=404,
         )
 
         with pytest.raises(AegisApiError) as exc_info:
-            admin_client.delete_user(999)
+            admin_client.delete_user(UNKNOWN_USER_UUID)
         assert exc_info.value.status_code == 404
 
     def test_no_api_key(self, client: AegisClient) -> None:
         with pytest.raises(ValueError, match="Master API key"):
-            client.delete_user(1)
+            client.delete_user(USER_UUID)
