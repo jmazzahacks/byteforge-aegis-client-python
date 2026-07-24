@@ -76,6 +76,8 @@ def handle_webhook():
     payload = request.get_json()
     if payload["event_type"] == "user.verified":
         print(f"User verified: {payload['email']}")
+    elif payload["event_type"] == "user.deleted":
+        print(f"User deleted: {payload['user_uuid']}")
 
     return jsonify({"received": True}), 200
 ```
