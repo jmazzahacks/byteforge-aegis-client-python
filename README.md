@@ -58,7 +58,7 @@ When your application receives webhooks from Aegis, use `verify_webhook_signatur
 
 ```python
 from flask import Flask, request, jsonify
-from byteforge_aegis_client import verify_webhook_signature
+from byteforge_aegis_client import WebhookEventType, verify_webhook_signature
 
 WEBHOOK_SECRET = "your-site-webhook-secret"
 
@@ -74,13 +74,15 @@ def handle_webhook():
         return jsonify({"error": "Invalid signature"}), 401
 
     payload = request.get_json()
-    if payload["event_type"] == "user.verified":
+    if payload["event_type"] == WebhookEventType.USER_VERIFIED:
         print(f"User verified: {payload['email']}")
-    elif payload["event_type"] == "user.deleted":
+    elif payload["event_type"] == WebhookEventType.USER_DELETED:
         print(f"User deleted: {payload['user_uuid']}")
 
     return jsonify({"received": True}), 200
 ```
+
+`WebhookEventType` is a `str`-subclass enum, so its members compare equal to the raw strings on the wire (`"user.verified"`, `"user.deleted"`) — plain string comparison keeps working too.
 
 **Parameters:**
 

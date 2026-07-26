@@ -1,6 +1,8 @@
 """Python client for ByteForge Aegis multi-tenant authentication."""
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
+
+from byteforge_aegis_models import WebhookEventType
 
 from byteforge_aegis_client.aegis_client import AegisClient
 from byteforge_aegis_client.config import AegisClientConfig
@@ -22,5 +24,6 @@ __all__ = [
     "AegisUnauthorized",
     "CreateSiteRequest",
     "UpdateSiteRequest",
+    "WebhookEventType",
     "verify_webhook_signature",
 ]
