@@ -32,7 +32,7 @@ users = client.admin_list_users()
 ## Admin Operations
 
 ```python
-from byteforge_aegis_client import AegisClient, AegisClientConfig, CreateSiteRequest
+from byteforge_aegis_client import AegisClient, AegisClientConfig, CreateSiteRequest, UpdateSiteRequest
 
 admin = AegisClient(AegisClientConfig(
     api_url="https://auth.example.com",
@@ -50,6 +50,13 @@ site = admin.create_site(CreateSiteRequest(
     email_from="noreply@myapp.com",
     email_from_name="My App",
 ))
+
+# Protect an ENTIRE TENANT from user deletion. Once set, no user on this
+# site can be deleted (409 'site_deletion_protected') and the site itself
+# cannot be deleted. Prefer this when every account on the tenant anchors
+# unrecoverable records — it does not depend on remembering to mark each user.
+site = admin.update_site(site_uuid, UpdateSiteRequest(deletion_protected=True))
+assert site.deletion_protected
 
 # Protect a user from deletion — delete_user then raises AegisApiError with
 # status 409 and code 'user_deletion_protected'. Use for accounts whose

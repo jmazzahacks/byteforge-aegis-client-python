@@ -66,6 +66,9 @@ class UpdateSiteRequest:
         webhook_url: New webhook URL (set to empty string to clear)
         regenerate_webhook_secret: Whether to regenerate the webhook secret
         regenerate_tenant_api_key: Whether to regenerate the tenant API key
+        deletion_protected: Tenant-wide deletion protection. While True, no
+            user on this site can be deleted (409 'site_deletion_protected')
+            and the site itself cannot be deleted.
     """
     name: Optional[str] = None
     domain: Optional[str] = None
@@ -79,6 +82,7 @@ class UpdateSiteRequest:
     regenerate_tenant_api_key: Optional[bool] = None
     mailgun_domain: Optional[str] = None
     mailgun_api_key: Optional[str] = None
+    deletion_protected: Optional[bool] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary, only including explicitly set fields."""
@@ -107,4 +111,6 @@ class UpdateSiteRequest:
             result['mailgun_domain'] = self.mailgun_domain
         if self.mailgun_api_key is not None:
             result['mailgun_api_key'] = self.mailgun_api_key
+        if self.deletion_protected is not None:
+            result['deletion_protected'] = self.deletion_protected
         return result

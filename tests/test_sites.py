@@ -91,6 +91,23 @@ class TestAdminSiteOperations:
         assert site.name == "Updated Site"
 
     @responses.activate
+    def test_update_site_sets_deletion_protection(self, admin_client: AegisClient) -> None:
+        """Tenant-wide protection is set through the normal update endpoint."""
+        responses.add(
+            responses.PUT, f"{API_URL}/api/sites/{SITE_UUID}",
+            json=make_site_dict(deletion_protected=True), status=200,
+        )
+
+        site = admin_client.update_site(SITE_UUID, UpdateSiteRequest(deletion_protected=True))
+
+        assert site.deletion_protected is True
+        assert b'"deletion_protected": true' in responses.calls[0].request.body
+
+    def test_update_request_omits_unset_deletion_protection(self) -> None:
+        """An update that doesn't mention protection must not clear it."""
+        assert 'deletion_protected' not in UpdateSiteRequest(name="x").to_dict()
+
+    @responses.activate
     def test_delete_site(self, admin_client: AegisClient) -> None:
         responses.add(
             responses.DELETE, f"{API_URL}/api/sites/{SITE_UUID}",

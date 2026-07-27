@@ -102,7 +102,7 @@ def make_login_response_dict(
     }
 
 
-def make_site_dict(site_uuid: str = SITE_UUID) -> dict:
+def make_site_dict(site_uuid: str = SITE_UUID, deletion_protected: bool = False) -> dict:
     """Helper to build a site response dict."""
     return {
         "uuid": site_uuid,
@@ -113,4 +113,5 @@ def make_site_dict(site_uuid: str = SITE_UUID) -> dict:
         "email_from_name": "Test Site",
         "created_at": 1700000000,
         "updated_at": 1700000100,
+        "deletion_protected": deletion_protected,
     }
