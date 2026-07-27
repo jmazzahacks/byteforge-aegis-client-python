@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "byteforge-aegis-client-python"
-version = "2.2.0"
+version = "2.3.0"
 description = "Python client for ByteForge Aegis multi-tenant authentication service"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "requests>=2.28.0",
-    "byteforge-aegis-models @ git+https://github.com/jmazzahacks/byteforge-aegis-models.git@v2.2.0",
+    "byteforge-aegis-models @ git+https://github.com/jmazzahacks/byteforge-aegis-models.git@v2.3.0",
 ]
 
 [project.optional-dependencies]

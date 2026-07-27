@@ -59,6 +59,7 @@ def make_user_dict(
     email: str = "user@test.com",
     is_verified: bool = True,
     role: str = "user",
+    deletion_protected: bool = False,
 ) -> dict:
     """Helper to build a user response dict."""
     return {
@@ -69,6 +70,7 @@ def make_user_dict(
         "role": role,
         "created_at": 1700000000,
         "updated_at": 1700000100,
+        "deletion_protected": deletion_protected,
     }
 
 

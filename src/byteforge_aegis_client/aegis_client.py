@@ -376,11 +376,30 @@ class AegisClient:
         """Delete a user and all of their data. DELETE /api/admin/users/{user_id}.
 
         Irreversible: the user and every token/record belonging to them is
-        permanently removed. Raises AegisApiError on failure (e.g. 404 if the
-        user does not exist).
+        permanently removed. Raises AegisApiError on failure — 404 if the user
+        does not exist, 409 if the user is deletion-protected (code
+        'user_deletion_protected') or is their site's last admin (code
+        'last_site_admin').
         """
         self._require_master_api_key()
         self._http.request('DELETE', f'/api/admin/users/{user_id}')
+
+    def set_user_deletion_protection(self, user_id: str, deletion_protected: bool) -> User:
+        """Set or clear deletion protection. PATCH /api/admin/users/{user_id}.
+
+        A protected user cannot be deleted — delete_user raises AegisApiError
+        with a 409 and code 'user_deletion_protected'. Use this for accounts
+        whose downstream records hold real value that would become
+        unattributable if the Aegis identity were removed. Clearing the flag
+        is a deliberate, separately auditable step before deletion.
+        """
+        self._require_master_api_key()
+        data = self._http.request(
+            'PATCH',
+            f'/api/admin/users/{user_id}',
+            json_body={'deletion_protected': deletion_protected}
+        )
+        return User.from_dict(data)
 
     # ========================================================================
     # Aegis Admin operations (used by admin frontend)

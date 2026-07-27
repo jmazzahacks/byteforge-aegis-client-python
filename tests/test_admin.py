@@ -123,3 +123,58 @@ class TestDeleteUser:
     def test_no_api_key(self, client: AegisClient) -> None:
         with pytest.raises(ValueError, match="Master API key"):
             client.delete_user(USER_UUID)
+
+    @responses.activate
+    def test_protected_user_raises_409(self, admin_client: AegisClient) -> None:
+        responses.add(
+            responses.DELETE, f"{API_URL}/api/admin/users/{USER_UUID}",
+            json={"error": "User is protected from deletion",
+                  "code": "user_deletion_protected"}, status=409,
+        )
+
+        with pytest.raises(AegisApiError) as exc_info:
+            admin_client.delete_user(USER_UUID)
+        assert exc_info.value.status_code == 409
+
+
+class TestSetUserDeletionProtection:
+    @responses.activate
+    def test_sets_flag(self, admin_client: AegisClient) -> None:
+        responses.add(
+            responses.PATCH, f"{API_URL}/api/admin/users/{USER_UUID}",
+            json=make_user_dict(deletion_protected=True), status=200,
+        )
+
+        user = admin_client.set_user_deletion_protection(USER_UUID, True)
+
+        assert isinstance(user, User)
+        assert user.deletion_protected is True
+        assert responses.calls[0].request.headers["X-API-Key"] == "master_key_123"
+        assert b'"deletion_protected": true' in responses.calls[0].request.body
+
+    @responses.activate
+    def test_clears_flag(self, admin_client: AegisClient) -> None:
+        responses.add(
+            responses.PATCH, f"{API_URL}/api/admin/users/{USER_UUID}",
+            json=make_user_dict(deletion_protected=False), status=200,
+        )
+
+        user = admin_client.set_user_deletion_protection(USER_UUID, False)
+
+        assert user.deletion_protected is False
+        assert b'"deletion_protected": false' in responses.calls[0].request.body
+
+    @responses.activate
+    def test_not_found(self, admin_client: AegisClient) -> None:
+        responses.add(
+            responses.PATCH, f"{API_URL}/api/admin/users/{UNKNOWN_USER_UUID}",
+            json={"error": "User not found"}, status=404,
+        )
+
+        with pytest.raises(AegisApiError) as exc_info:
+            admin_client.set_user_deletion_protection(UNKNOWN_USER_UUID, True)
+        assert exc_info.value.status_code == 404
+
+    def test_no_api_key(self, client: AegisClient) -> None:
+        with pytest.raises(ValueError, match="Master API key"):
+            client.set_user_deletion_protection(USER_UUID, True)

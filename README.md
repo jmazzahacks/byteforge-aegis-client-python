@@ -50,6 +50,12 @@ site = admin.create_site(CreateSiteRequest(
     email_from="noreply@myapp.com",
     email_from_name="My App",
 ))
+
+# Protect a user from deletion — delete_user then raises AegisApiError with
+# status 409 and code 'user_deletion_protected'. Use for accounts whose
+# records hold value that would be unattributable without the Aegis identity.
+user = admin.set_user_deletion_protection(user_uuid, True)
+assert user.deletion_protected
 ```
 
 ## Webhook Signature Verification
