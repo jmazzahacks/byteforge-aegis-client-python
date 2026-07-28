@@ -1,7 +1,15 @@
 """Webhook signature verification for ByteForge Aegis webhooks."""
 import hashlib
 import hmac
+import re
 import time
+
+
+# A SHA-256 HMAC rendered as hex. Signature headers are matched against this
+# before comparison: hmac.compare_digest raises TypeError on non-ASCII str,
+# and header values arrive latin-1-decoded, so an unauthenticated caller
+# could otherwise crash a receiver with a single high byte.
+_HEX_DIGEST = re.compile(r'[0-9a-fA-F]{64}')
 
 
 def verify_webhook_signature(
@@ -32,6 +40,13 @@ def verify_webhook_signature(
         return False
 
     received_digest = signature_header[7:]
+
+    # Reject anything that isn't a hex digest before comparing. Without this,
+    # a non-ASCII byte in the attacker-controlled X-Aegis-Signature header
+    # makes hmac.compare_digest raise TypeError — an unauthenticated 500 on
+    # any receiver, no captured delivery required.
+    if not _HEX_DIGEST.fullmatch(received_digest):
+        return False
 
     # Check timestamp freshness
     if tolerance_seconds > 0:
