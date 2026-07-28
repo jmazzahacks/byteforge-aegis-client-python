@@ -87,6 +87,10 @@ def handle_webhook():
         return jsonify({"error": "Invalid signature"}), 401
 
     payload = request.get_json()
+    # Dispatch on the BODY's event_type. The HMAC covers only
+    # "{timestamp}.{raw_body}", so the X-Aegis-Event header is NOT signed —
+    # a captured delivery replayed inside the freshness window with that
+    # header rewritten still verifies. The body is the authoritative value.
     if payload["event_type"] == WebhookEventType.USER_VERIFIED:
         print(f"User verified: {payload['email']}")
     elif payload["event_type"] == WebhookEventType.USER_DELETED:
