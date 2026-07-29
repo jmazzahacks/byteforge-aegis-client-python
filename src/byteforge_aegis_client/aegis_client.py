@@ -277,11 +277,20 @@ class AegisClient:
         data = self._http.request('POST', '/api/auth/reset-password', body)
         return User.from_dict(data)
 
-    def request_email_change(self, new_email: str) -> EmailChangeResponse:
-        """Request an email change. POST /api/auth/request-email-change"""
+    def request_email_change(self, new_email: str, password: str) -> EmailChangeResponse:
+        """
+        Request an email change. POST /api/auth/request-email-change
+
+        The current password is required as of Aegis backend v61. This
+        endpoint moves the account's login identifier, so an auth token
+        alone must not be enough to call it — otherwise a stolen token
+        converts into permanent ownership of the account.
+        """
         self._require_auth_token()
         data = self._http.request(
-            'POST', '/api/auth/request-email-change', {'new_email': new_email}
+            'POST',
+            '/api/auth/request-email-change',
+            {'new_email': new_email, 'password': password},
         )
         return EmailChangeResponse.from_dict(data)
 
