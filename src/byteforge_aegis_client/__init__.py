@@ -1,6 +1,6 @@
 """Python client for ByteForge Aegis multi-tenant authentication."""
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 from byteforge_aegis_models import WebhookEventType
 
