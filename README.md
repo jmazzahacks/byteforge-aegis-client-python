@@ -81,9 +81,16 @@ app = Flask(__name__)
 def handle_webhook():
     signature = request.headers.get("X-Aegis-Signature", "")
     timestamp = request.headers.get("X-Aegis-Timestamp", "")
+    event_type = request.headers.get("X-Aegis-Event", "")
     body = request.get_data(as_text=True)
 
-    if not verify_webhook_signature(WEBHOOK_SECRET, signature, timestamp, body):
+    # Pass event_type. The HMAC covers only "{timestamp}.{raw_body}", so the
+    # X-Aegis-Event header is NOT signed — without this argument a captured
+    # delivery can be replayed inside the freshness window with that header
+    # rewritten to any event, and the signature still verifies.
+    if not verify_webhook_signature(
+        WEBHOOK_SECRET, signature, timestamp, body, event_type=event_type
+    ):
         return jsonify({"error": "Invalid signature"}), 401
 
     payload = request.get_json()

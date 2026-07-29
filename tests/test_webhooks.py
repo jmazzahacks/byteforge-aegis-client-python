@@ -94,3 +94,70 @@ def test_malformed_signature_is_rejected() -> None:
     ts = str(int(time.time()))
     for bad in ["sha256=", "sha256=xyz", "sha256=" + "a" * 63, "sha256=" + "a" * 65]:
         assert verify_webhook_signature(SECRET, bad, ts, BODY) is False, bad
+
+
+# --- Unsigned X-Aegis-Event header -----------------------------------------
+#
+# The HMAC covers only "{timestamp}.{raw_body}". The X-Aegis-Event header is
+# not signed, so a captured delivery can be replayed inside the freshness
+# window with that header rewritten to any event. A receiver dispatching on
+# the header then acts on a forged event. Passing event_type makes this
+# function reject the mismatch.
+
+def test_matching_event_header_passes():
+    ts = str(int(time.time()))
+    sig = _make_signature(SECRET, ts, BODY)
+
+    assert verify_webhook_signature(
+        SECRET, sig, ts, BODY, event_type="user.verified"
+    ) is True
+
+
+def test_rewritten_event_header_is_rejected():
+    """The attack: a valid signature over a user.verified body, replayed
+    with the header claiming user.deleted."""
+    ts = str(int(time.time()))
+    sig = _make_signature(SECRET, ts, BODY)
+
+    assert verify_webhook_signature(
+        SECRET, sig, ts, BODY, event_type="user.deleted"
+    ) is False
+
+
+def test_event_header_check_is_opt_in():
+    """Omitting event_type preserves the old behaviour for existing callers."""
+    ts = str(int(time.time()))
+    sig = _make_signature(SECRET, ts, BODY)
+
+    assert verify_webhook_signature(SECRET, sig, ts, BODY) is True
+
+
+def test_non_json_body_with_event_type_is_rejected():
+    ts = str(int(time.time()))
+    body = "not json at all"
+    sig = _make_signature(SECRET, ts, body)
+
+    assert verify_webhook_signature(
+        SECRET, sig, ts, body, event_type="user.verified"
+    ) is False
+
+
+def test_json_array_body_with_event_type_is_rejected():
+    """A non-object body cannot agree with the header."""
+    ts = str(int(time.time()))
+    body = '["user.verified"]'
+    sig = _make_signature(SECRET, ts, body)
+
+    assert verify_webhook_signature(
+        SECRET, sig, ts, body, event_type="user.verified"
+    ) is False
+
+
+def test_body_without_event_type_is_rejected():
+    ts = str(int(time.time()))
+    body = '{"user_uuid":"abc"}'
+    sig = _make_signature(SECRET, ts, body)
+
+    assert verify_webhook_signature(
+        SECRET, sig, ts, body, event_type="user.verified"
+    ) is False

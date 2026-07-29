@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -19,7 +19,12 @@ class AegisClientConfig:
     """
     api_url: str
     site_id: Optional[str] = None
-    master_api_key: Optional[str] = None
-    tenant_api_key: Optional[str] = None
+    # repr=False on both keys: the generated __repr__ would otherwise print
+    # them verbatim, so anything that logs a config, or an unhandled
+    # traceback with one in a local, writes live credentials into the
+    # consumer's logs. Nothing in this library logs — but the consumer's
+    # framework will, and by then the secret has already left.
+    master_api_key: Optional[str] = field(default=None, repr=False)
+    tenant_api_key: Optional[str] = field(default=None, repr=False)
     auto_refresh: bool = True
     refresh_buffer_seconds: int = 300
