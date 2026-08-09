@@ -27,6 +27,11 @@ except AegisApiError as e:
 
 # Tokens are auto-managed after login
 users = client.admin_list_users()
+
+# Add a user to your own site (requires an admin-role bearer token).
+# The site is derived from the token, so there is no site_id to pass.
+# The invitee gets a verification email and sets their own password.
+new_user = client.admin_register_user("invitee@example.com")
 ```
 
 ## Admin Operations

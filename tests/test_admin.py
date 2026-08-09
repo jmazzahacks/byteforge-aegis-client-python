@@ -42,6 +42,65 @@ class TestAdminListUsers:
             client.admin_list_users()
 
 
+class TestAdminRegisterUser:
+    """The bearer-token add-user endpoint the Aegis console itself uses.
+
+    Distinct from register_admin below, which needs the master key. The
+    site is never sent — Aegis derives it from the token's user record,
+    which is what keeps an admin confined to their own site.
+    """
+
+    @responses.activate
+    def test_success(self, authed_client: AegisClient) -> None:
+        responses.add(
+            responses.POST, f"{API_URL}/api/admin/register-user",
+            json=make_user_dict(), status=201,
+        )
+
+        user = authed_client.admin_register_user("invitee@test.com")
+        assert isinstance(user, User)
+
+    @responses.activate
+    def test_omits_role_when_not_given(self, authed_client: AegisClient) -> None:
+        responses.add(
+            responses.POST, f"{API_URL}/api/admin/register-user",
+            json=make_user_dict(), status=201,
+        )
+
+        authed_client.admin_register_user("invitee@test.com")
+
+        body = responses.calls[0].request.body
+        assert b'"role"' not in body, "an absent role must let Aegis default it"
+        assert b'"site_id"' not in body, "the site comes from the token, never the body"
+
+    @responses.activate
+    def test_sends_role_when_given(self, authed_client: AegisClient) -> None:
+        responses.add(
+            responses.POST, f"{API_URL}/api/admin/register-user",
+            json=make_user_dict(role="admin"), status=201,
+        )
+
+        user = authed_client.admin_register_user("boss@test.com", role="admin")
+        assert user.role.value == "admin"
+        assert b'"role": "admin"' in responses.calls[0].request.body
+
+    @responses.activate
+    def test_duplicate_email_is_an_error(self, authed_client: AegisClient) -> None:
+        """Unlike public register, this endpoint is not enumeration-safe —
+        callers get a real 400 they can act on."""
+        responses.add(
+            responses.POST, f"{API_URL}/api/admin/register-user",
+            json={"error": "Email already registered for this site"}, status=400,
+        )
+
+        with pytest.raises(AegisApiError):
+            authed_client.admin_register_user("taken@test.com")
+
+    def test_no_auth_token(self, client: AegisClient) -> None:
+        with pytest.raises(ValueError, match="Authentication token"):
+            client.admin_register_user("invitee@test.com")
+
+
 class TestRegisterAdmin:
     @responses.activate
     def test_success(self, admin_client: AegisClient) -> None:

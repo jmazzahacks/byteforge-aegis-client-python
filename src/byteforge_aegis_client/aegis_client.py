@@ -311,6 +311,40 @@ class AegisClient:
         data = self._http.request('GET', '/api/admin/users')
         return [User.from_dict(u) for u in data]
 
+    def admin_register_user(
+        self, email: str, role: Optional[str] = None
+    ) -> User:
+        """Add a user to the admin's own site. POST /api/admin/register-user
+
+        There is deliberately no site_id parameter: Aegis derives the site
+        from the bearer token's own user record, so an admin can only add
+        users to the site they belong to. This is the endpoint the Aegis
+        admin console's "add user" button uses.
+
+        The user is created without a password and receives a verification
+        email; they set their own password when they follow the link.
+
+        Args:
+            email: The new user's email address.
+            role: Aegis-side role, 'user' or 'admin'. Defaults to 'user'.
+                Unrelated to any role the calling application maintains —
+                'admin' grants Aegis console administration of this site.
+
+        Returns:
+            The created User.
+
+        Raises:
+            ValueError: If no auth token is set.
+            AegisApiError: 400 if the email already exists on this site,
+                403 if the authenticated user is not an admin.
+        """
+        self._require_auth_token()
+        body: Dict[str, Any] = {'email': email}
+        if role:
+            body['role'] = role
+        data = self._http.request('POST', '/api/admin/register-user', body)
+        return User.from_dict(data)
+
     # ========================================================================
     # Admin operations (Master API key auth)
     # ========================================================================
