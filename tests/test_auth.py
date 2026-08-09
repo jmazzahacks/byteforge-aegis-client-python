@@ -3,9 +3,9 @@ import pytest
 import responses
 
 from byteforge_aegis_client import AegisClient, AegisClientConfig, AegisApiError
-from byteforge_aegis_models import LoginResult, MessageResponse
+from byteforge_aegis_models import LoginResult, MessageResponse, User
 
-from conftest import API_URL, make_login_response_dict
+from conftest import API_URL, SITE_UUID, make_login_response_dict, make_user_dict
 
 
 class TestLogin:
@@ -110,6 +110,70 @@ class TestRegister:
         client.register("user@test.com")
         body = responses.calls[0].request.body.decode()
         assert "password" not in body
+
+
+class TestInviteUser:
+    """The tenant-key invite path.
+
+    Distinct from register in the two ways that made register unusable for
+    invitations: it returns the created User, and a duplicate is a real
+    error rather than an indistinguishable success.
+    """
+
+    @responses.activate
+    def test_success(self, tenant_client: AegisClient) -> None:
+        responses.add(
+            responses.POST, f"{API_URL}/api/auth/invite-user",
+            json=make_user_dict(), status=201,
+        )
+
+        user = tenant_client.invite_user("invitee@test.com")
+
+        assert isinstance(user, User)
+
+    @responses.activate
+    def test_sends_the_tenant_key(self, tenant_client: AegisClient) -> None:
+        """The only credential this endpoint takes."""
+        responses.add(
+            responses.POST, f"{API_URL}/api/auth/invite-user",
+            json=make_user_dict(), status=201,
+        )
+
+        tenant_client.invite_user("invitee@test.com")
+
+        assert responses.calls[0].request.headers["X-Tenant-Api-Key"] == "tenant_secret_abc123"
+
+    @responses.activate
+    def test_sends_site_id_and_never_a_role(self, tenant_client: AegisClient) -> None:
+        """site_id is what the tenant-key gate authenticates against, and
+        role is absent by design — a tenant key must not mint admins."""
+        responses.add(
+            responses.POST, f"{API_URL}/api/auth/invite-user",
+            json=make_user_dict(), status=201,
+        )
+
+        tenant_client.invite_user("invitee@test.com")
+
+        body = responses.calls[0].request.body.decode()
+        assert SITE_UUID in body
+        assert "role" not in body
+        assert "password" not in body
+
+    @responses.activate
+    def test_duplicate_email_raises(self, tenant_client: AegisClient) -> None:
+        """The difference from register that matters: the caller can tell."""
+        responses.add(
+            responses.POST, f"{API_URL}/api/auth/invite-user",
+            json={"error": "Email already registered for this site"}, status=400,
+        )
+
+        with pytest.raises(AegisApiError):
+            tenant_client.invite_user("taken@test.com")
+
+    def test_requires_a_site_id(self, admin_client: AegisClient) -> None:
+        """admin_client has no site_id configured."""
+        with pytest.raises(ValueError, match="site_id"):
+            admin_client.invite_user("invitee@test.com")
 
 
 class TestRefresh:

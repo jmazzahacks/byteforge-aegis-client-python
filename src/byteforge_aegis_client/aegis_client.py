@@ -186,6 +186,56 @@ class AegisClient:
         data = self._http.request('POST', '/api/auth/register', body)
         return MessageResponse.from_dict(data)
 
+    def invite_user(self, email: str, site_id: Optional[str] = None) -> User:
+        """Invite a user onto your own site. POST /api/auth/invite-user
+
+        Authorized by the tenant API key alone — no bearer token and no
+        master key. The authorization decision that *this person may invite
+        that person* is yours to make against your own session before you
+        call; Aegis only checks that the key belongs to the site named.
+
+        Prefer this over `register(password=None)` for invitations:
+
+          * it works whether or not the site allows self-registration, so
+            an invite-only site does not have to enable public signup in
+            order to send invites;
+          * it returns the created User, and raises AegisApiError with a
+            400 if the address already belongs to an established account.
+            `register` is enumeration-safe and returns the same
+            MessageResponse either way, so it cannot tell you whether the
+            invite actually landed.
+
+        Re-inviting a still-pending invitation (no password set, not yet
+        verified) resends the link, invalidates the previous one, and
+        returns the same user. Verification links expire after 24h while
+        the account does not, so without that an ignored or spam-filtered
+        invitation would block every retry and lock the invitee out for
+        good. Accounts anyone has begun using are never resent to.
+
+        The invitee is created without a password and emailed a link to
+        your own frontend, where they set one. `user.verified` fires at
+        that point — and only then. An invitation that is never accepted
+        produces no webhook at all, so expire your own pending invites
+        rather than waiting for a signal that is not coming.
+
+        Args:
+            email: Address to invite.
+            site_id: Your site's UUID. Falls back to the configured site_id.
+
+        Returns:
+            The created User (unverified, no password set).
+
+        Raises:
+            ValueError: If no site_id is available.
+            AegisApiError: 400 if the address belongs to an established
+                account on this site, 401 if the tenant API key is missing
+                or is not this site's.
+        """
+        resolved_site_id = self._require_site_id(site_id)
+        body: Dict[str, Any] = {'site_id': resolved_site_id, 'email': email}
+        data = self._http.request('POST', '/api/auth/invite-user', body)
+        return User.from_dict(data)
+
     def login(
         self, email: str, password: str, site_id: Optional[str] = None
     ) -> LoginResult:

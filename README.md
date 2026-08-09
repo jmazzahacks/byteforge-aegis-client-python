@@ -34,6 +34,72 @@ users = client.admin_list_users()
 new_user = client.admin_register_user("invitee@example.com")
 ```
 
+## Inviting users (tenant API key)
+
+If you are an integrating backend adding users to your own site, this is the
+path you want. It needs only the tenant API key you already hold — no bearer
+token, no master key.
+
+```python
+from byteforge_aegis_client import AegisClient, AegisClientConfig, AegisApiError
+
+client = AegisClient(AegisClientConfig(
+    api_url="https://auth.example.com",
+    site_id="0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d",
+    tenant_api_key="your-tenant-key",   # server-side only, never in the browser
+))
+
+try:
+    user = client.invite_user("invitee@example.com")
+except AegisApiError as e:
+    if e.status_code == 400:
+        ...  # already an established user on this site
+```
+
+Re-inviting someone who has not accepted yet resends the link, invalidates the
+previous one, and returns the same user. Verification links expire after 24h
+while the account does not, so without that an ignored or spam-filtered
+invitation would block every retry and lock the invitee out for good. Accounts
+anyone has begun using are never resent to.
+
+You authorize the invitation yourself, against your own session and your own
+rules, before calling. Aegis only checks that the key belongs to the site
+named — and a tenant key can never name another site.
+
+The invitee is created **without a password** and emailed a link to *your*
+frontend (`{frontend_url}/verify-email?token=…`, valid 24h). Your page calls
+`check_verification_token(token)` to learn that `password_required` is true,
+collects a password, and calls `verify_email(token, password)`. All three
+calls use the same tenant key.
+
+### Why not `register(password=None)`?
+
+`register` is the public signup path and it differs in two ways that matter
+for invitations:
+
+| | `invite_user` | `register` |
+|---|---|---|
+| Site must allow self-registration | no | **yes** |
+| Established duplicate | raises 400 | silent 201, creates nothing |
+| Pending invitation | resends the link | silent 201, creates nothing |
+| Returns | the created `User` | a generic `MessageResponse` |
+| Can set a role | no, always an ordinary user | no |
+
+`register` is enumeration-safe on purpose — it must not reveal to a stranger
+at a signup form whether an address is registered. That protects nothing when
+the caller already owns the site's entire user list, and it costs you the
+ability to tell whether the invite landed.
+
+### `user.verified` is your only signal
+
+No webhook fires when you invite. `user.verified` fires when the invitee sets
+their password, and that event *is* proof they control the mailbox: the
+verification token is only ever delivered by email and appears in no API
+response. Binding an account or a membership on it is sound.
+
+An invitation that is never accepted produces no event at all — **expire your
+own pending invites** rather than waiting.
+
 ## Admin Operations
 
 ```python
